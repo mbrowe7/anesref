@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>AnesRef</title>
+
+<!-- PWA manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- iOS PWA meta tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AnesRef">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0d0f12">
+
+<!-- iOS icons -->
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
+
+<!-- Splash screen background color for iOS -->
+<meta name="msapplication-TileColor" content="#0d0f12">
+
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f12;
+  --surface:#161920;
+  --surface2:#1e2229;
+  --surface3:#252c35;
+  --border:#2a3040;
+  --text:#e8eaf0;
+  --text2:#8892a4;
+  --text3:#4e5a6e;
+  --accent:#4f9cf9;
+  --accent-dim:#1a3a6e;
+  --red:#f25c54;
+  --red-dim:#3d1715;
+  --amber:#f5a623;
+  --amber-dim:#3a2a0a;
+  --green:#3ecf8e;
+  --green-dim:#0e3326;
+  --purple:#a78bfa;
+  --purple-dim:#2e1f5e;
+  --tab-h:64px;
+  --header-h:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px}
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;max-width:480px;margin:0 auto;position:relative}
+.page-header{height:var(--header-h);display:flex;align-items:center;padding:0 18px;background:var(--bg);border-bottom:1px solid var(--border);flex-shrink:0;position:relative;z-index:10}
+.page-header h1{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.page-header .subtitle{font-size:12px;color:var(--text2);margin-top:1px}
+.content{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:calc(var(--tab-h) + 8px)}
+.tab-bar{height:var(--tab-h);display:flex;background:var(--surface);border-top:1px solid var(--border);flex-shrink:0;position:relative;z-index:10}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;color:var(--text3);transition:color 0.15s;padding:8px 4px;border:none;background:none}
+.tab.active{color:var(--accent)}
+.tab svg{width:22px;height:22px}
+.tab span{font-size:10px;font-weight:600;letter-spacing:0.2px}
+.screen{display:none;padding:0}
+.screen.active{display:block}
+
+/* ── SHARED ── */
+.section-label{font-size:11px;font-weight:600;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;padding:20px 18px 8px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:0 12px 10px;overflow:hidden}
+.card-header{padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer}
+.card-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.card-title{font-size:15px;font-weight:600}
+.card-sub{font-size:12px;color:var(--text2);margin-top:2px}
+.chevron{margin-left:auto;color:var(--text3);transition:transform 0.2s;font-size:16px}
+.card.open .chevron{transform:rotate(90deg)}
+.card-body{display:none;border-top:1px solid var(--border);padding:16px}
+.card.open .card-body{display:block}
+
+/* ── CRISIS CARDS ── */
+.crisis-step{display:flex;gap:12px;margin-bottom:14px}
+.step-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-text{font-size:13px;line-height:1.6;color:var(--text)}
+.step-text strong{color:var(--text);font-weight:600}
+.step-text .dose{font-family:'DM Mono',monospace;font-size:12px;background:var(--surface3);padding:2px 7px;border-radius:6px;color:var(--accent)}
+.alert-box{border-radius:10px;padding:12px 14px;margin-bottom:14px;font-size:13px;line-height:1.6}
+.alert-red{background:var(--red-dim);border:1px solid var(--red);color:#fca5a5}
+.alert-amber{background:var(--amber-dim);border:1px solid var(--amber);color:#fcd34d}
+.alert-green{background:var(--green-dim);border:1px solid var(--green);color:#6ee7b7}
+.pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.pill{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:500}
+.pill-red{background:var(--red-dim);color:#fca5a5;border:1px solid #5a2020}
+.pill-amber{background:var(--amber-dim);color:#fcd34d;border:1px solid #5a3d0a}
+.pill-green{background:var(--green-dim);color:#6ee7b7;border:1px solid #0e4d32}
+.pill-blue{background:var(--accent-dim);color:#93c5fd;border:1px solid #1e3a6a}
+
+/* ── CALCULATORS ── */
+.calc-body{padding:16px}
+.calc-field{margin-bottom:14px}
+.calc-label{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.calc-label span{font-size:11px;color:var(--text3);font-weight:400}
+.calc-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;font-size:15px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;-webkit-appearance:none}
+.calc-input:focus{border-color:var(--accent)}
+.calc-input::placeholder{color:var(--text3)}
+select.calc-input{cursor:pointer}
+.calc-btn{width:100%;padding:14px;background:var(--accent);color:#fff;font-size:15px;font-weight:600;border:none;border-radius:12px;cursor:pointer;margin-top:6px;font-family:'DM Sans',sans-serif;transition:opacity 0.15s}
+.calc-btn:active{opacity:0.85}
+.result-box{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-top:14px}
+.result-row{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid var(--border)}
+.result-row:last-child{border-bottom:none}
+.result-label{font-size:12px;color:var(--text2)}
+.result-val{font-size:15px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent)}
+.result-val.warn{color:var(--amber)}
+.result-val.danger{color:var(--red)}
+.divider{border:none;border-top:1px solid var(--border);margin:16px 0}
+
+/* ── MEDS PAGE ── */
+.search-wrap{padding:12px 12px 4px}
+.search-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:11px 14px 11px 38px;font-size:14px;color:var(--text);outline:none;font-family:'DM Sans',sans-serif;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%234e5a6e' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.243 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:12px center}
+.search-input:focus{border-color:var(--accent)}
+.filter-scroll{display:flex;gap:7px;overflow-x:auto;padding:10px 12px;scrollbar-width:none}
+.filter-scroll::-webkit-scrollbar{display:none}
+.ftag{flex-shrink:0;padding:6px 14px;font-size:12px;font-weight:600;border-radius:20px;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all 0.15s}
+.ftag.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.drug-row{padding:14px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s}
+.drug-row:active{background:var(--surface2)}
+.drug-row:last-child{border-bottom:none}
+.drug-name-row{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.drug-name-text{font-size:15px;font-weight:600}
+.drug-brand{font-size:11px;color:var(--text3);font-style:italic}
+.drug-moa{font-size:12px;color:var(--text2);line-height:1.5;margin-top:2px}
+.drug-detail{display:none;background:var(--surface2);padding:12px 16px;border-top:1px solid var(--border)}
+.drug-detail.open{display:block}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.detail-cell{background:var(--surface3);border-radius:8px;padding:10px 12px}
+.detail-cell-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.detail-cell-val{font-size:12px;color:var(--text);line-height:1.5;font-family:'DM Mono',monospace}
+.detail-pearls{background:var(--amber-dim);border:1px solid #5a3d0a;border-radius:8px;padding:10px 12px;font-size:12px;color:#fcd34d;line-height:1.5}
+.cat-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* ── REFERENCE ── */
+.ref-section{margin:0 12px 10px}
+.ref-title{font-size:16px;font-weight:600;margin-bottom:10px;padding:16px 16px 0}
+.ref-table{width:100%;border-collapse:collapse;font-size:12px}
+.ref-table th{text-align:left;padding:8px 10px;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.ref-table td{padding:9px 10px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:top;line-height:1.5}
+.ref-table tr:last-child td{border-bottom:none}
+.mono{font-family:'DM Mono',monospace;color:var(--accent);font-size:12px}
+
+/* ── HOME ── */
+.home-hero{padding:20px 18px 10px}
+.home-greeting{font-size:22px;font-weight:600;letter-spacing:-0.5px;margin-bottom:4px}
+.home-sub{font-size:13px;color:var(--text2)}
+.tile-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px 12px}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:18px 16px;cursor:pointer;transition:all 0.15s;display:flex;flex-direction:column;gap:10px}
+.tile:active{transform:scale(0.97);background:var(--surface2)}
+.tile-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.tile-name{font-size:14px;font-weight:600;line-height:1.3}
+.tile-count{font-size:11px;color:var(--text3)}
+.quick-label{font-size:11px;font-weight:700;color:var(--text3);letter-spacing:0.8px;text-transform:uppercase;padding:16px 18px 8px}
+.quick-row{display:flex;gap:8px;overflow-x:auto;padding:0 12px 12px;scrollbar-width:none}
+.quick-row::-webkit-scrollbar{display:none}
+.quick-chip{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all 0.15s}
+.quick-chip:active{background:var(--surface2)}
+.quick-chip-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.quick-chip-sub{font-size:11px;color:var(--text3)}
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- HEADER -->
+  <div class="page-header" id="main-header">
+    <div>
+      <h1 id="header-title">AnesRef</h1>
+      <div class="subtitle" id="header-sub">Stanford CA-1 Reference</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- HOME -->
+    <div class="screen active" id="screen-home">
+      <div class="home-hero">
+        <div class="home-greeting">Good morning, Resident.</div>
+        <div class="home-sub">What do you need right now?</div>
+      </div>
+      <div class="quick-label">Crisis Protocols</div>
+      <div class="quick-row">
+        <div class="quick-chip" onclick="openCrisis('mh')"><div class="quick-chip-title">🔥 Malignant Hyperthermia</div><div class="quick-chip-sub">Dantrolene dosing + steps</div></div>
+        <div class="quick-chip" onclick="openCrisis('anaphylaxis')"><div class="quick-chip-title">⚡ Anaphylaxis</div><div class="quick-chip-sub">Epi dosing + algorithm</div></div>
+        <div class="quick-chip" onclick="openCrisis('last')"><div class="quick-chip-title">💉 LAST</div><div class="quick-chip-sub">Intralipid protocol</div></div>
+        <div class="quick-chip" onclick="openCrisis('cico')"><div class="quick-chip-title">🫁 CICO</div><div class="quick-chip-sub">Can't intubate, can't oxygenate</div></div>
+      </div>
+      <div class="quick-label">Calculators</div>
+      <div class="quick-row">
+        <div class="quick-chip" onclick="openCalc('abl')"><div class="quick-chip-title">🩸 Allowable Blood Loss</div><div class="quick-chip-sub">EBL + transfusion trigger</div></div>
+        <div class="quick-chip" onclick="openCalc('fluids')"><div class="quick-chip-title">💧 Fluid Calculator</div><div class="quick-chip-sub">4-2-1 + deficits</div></div>
+        <div class="quick-chip" onclick="openCalc('ponv')"><div class="quick-chip-title">🤢 PONV Risk Score</div><div class="quick-chip-sub">Apfel + prophylaxis</div></div>
+        <div class="quick-chip" onclick="openCalc('weight')"><div class="quick-chip-title">⚖️ Body Weight</div><div class="quick-chip-sub">IBW / ABW / LBW</div></div>
+        <div class="quick-chip" onclick="openCalc('parkland')"><div class="quick-chip-title">🔥 Parkland Burns</div><div class="quick-chip-sub">% BSA fluid calc</div></div>
+        <div class="quick-chip" onclick="openCalc('reversal')"><div class="quick-chip-title">↩️ NMBA Reversal</div><div class="quick-chip-sub">Neostigmine vs Sugammadex</div></div>
+      </div>
+      <div class="tile-grid">
+        <div class="tile" onclick="switchTab('meds')">
+          <div class="tile-icon" style="background:#1a3a6e">💊</div>
+          <div><div class="tile-name">Medications</div><div class="tile-count">46 drugs</div></div>
+        </div>
+        <div class="tile" onclick="switchTab('crisis')">
+          <div class="tile-icon" style="background:var(--red-dim)">🚨</div>
+          <div><div class="tile-name">Crisis Protocols</div><div class="tile-count">8 protocols</div></div>
+        </div>
+        <div class="tile" onclick="switchTab('calc')">
+          <div class="tile-icon" style="background:var(--green-dim)">🧮</div>
+          <div><div class="tile-name">Calculators</div><div class="tile-count">6 tools</div></div>
+        </div>
+        <div class="tile" onclick="switchTab('ref')">
+          <div class="tile-icon" style="background:var(--purple-dim)">📋</div>
+          <div><div class="tile-name">Reference</div><div class="tile-count">Checklists + tables</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CRISIS PROTOCOLS -->
+    <div class="screen" id="screen-crisis">
+      <div class="section-label">Emergency Protocols</div>
+
+      <!-- MH -->
+      <div class="card" id="crisis-mh">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--red-dim);font-size:22px">🔥</div>
+          <div><div class="card-title">Malignant Hyperthermia</div><div class="card-sub">Volatile / Sux trigger — RyR1 mutation</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="alert-box alert-red">⚠️ Earliest signs: unexplained ↑EtCO₂ + tachycardia. Hyperthermia is LATE.</div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">1</div><div class="step-text"><strong>Call for help.</strong> Activate MH protocol. Call MHAUS: <span class="dose">1-800-644-9737</span></div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">2</div><div class="step-text"><strong>Stop trigger.</strong> D/C all volatile agents and succinylcholine immediately.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">3</div><div class="step-text"><strong>Flush circuit</strong> with 100% O₂ at <span class="dose">≥10 L/min</span> high flow. Hyperventilate ×2–3 normal MV.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">4</div><div class="step-text"><strong>Dantrolene</strong> <span class="dose">2.5 mg/kg IV</span> bolus — repeat q5–10 min. Initial max: <span class="dose">10 mg/kg</span>. Mix each vial with 60 mL sterile water.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">5</div><div class="step-text"><strong>Cool actively:</strong> ice to axilla/groin, cold IV fluids, cold gastric/bladder lavage. Target core &lt;38.5°C.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">6</div><div class="step-text"><strong>Treat complications:</strong>
+            <div class="pill-row">
+              <span class="pill pill-red">Hyperkalemia → bicarb + insulin/D50</span>
+              <span class="pill pill-red">Acidosis → bicarb</span>
+              <span class="pill pill-red">Arrhythmia → amiodarone (NOT CCBs)</span>
+              <span class="pill pill-red">DIC → FFP/PLT</span>
+            </div>
+          </div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--red-dim);color:#fca5a5">7</div><div class="step-text"><strong>ICU admission.</strong> Continue dantrolene <span class="dose">1 mg/kg q6h × 24–48h</span>. Monitor CK, K⁺, urine output (target &gt;1 mL/kg/hr).</div></div>
+          <div class="alert-box alert-amber" style="margin-top:14px">💊 Dantrolene math: 2.5 mg/kg × 70 kg = 175 mg = ~6 vials (each vial = 20 mg + 3g mannitol). Have 36 vials (720 mg) on hand.</div>
+        </div>
+      </div>
+
+      <!-- ANAPHYLAXIS -->
+      <div class="card" id="crisis-anaphylaxis">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--amber-dim);font-size:22px">⚡</div>
+          <div><div class="card-title">Anaphylaxis</div><div class="card-sub">NMBAs are #1 cause intraop (>50%)</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="alert-box alert-amber">Under GA: skin signs may be ABSENT. Look for ↓BP + bronchospasm + ↑airway pressures.</div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">1</div><div class="step-text"><strong>Stop the trigger.</strong> Call for help. Note time.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">2</div><div class="step-text"><strong>Epinephrine</strong> (FIRST LINE — do not delay):<br><span class="dose">10–100 mcg IV</span> bolus — repeat q1–5 min<br>If refractory: <span class="dose">0.05–0.3 mcg/kg/min infusion</span></div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">3</div><div class="step-text"><strong>IV fluids.</strong> Bolus <span class="dose">1–2 L crystalloid</span> rapidly for distributive shock.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">4</div><div class="step-text"><strong>100% O₂.</strong> Secure/confirm airway. Treat bronchospasm with salbutamol nebs, ketamine, or heliox.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">5</div><div class="step-text"><strong>Adjuncts</strong> (after epi + fluids):<div class="pill-row"><span class="pill pill-amber">Diphenhydramine 50 mg IV</span><span class="pill pill-amber">Ranitidine 50 mg IV</span><span class="pill pill-amber">Hydrocortisone 200 mg IV</span></div></div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">6</div><div class="step-text"><strong>Draw serum tryptase</strong> ASAP — peaks at <span class="dose">30–90 min</span>. Repeat at 2h and 24h.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--amber-dim);color:#fcd34d">7</div><div class="step-text"><strong>ICU observation</strong> × 24h (biphasic reaction risk). Allergy follow-up at 4–6 weeks.</div></div>
+        </div>
+      </div>
+
+      <!-- LAST -->
+      <div class="card" id="crisis-last">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--accent-dim);font-size:22px">💉</div>
+          <div><div class="card-title">LAST</div><div class="card-sub">Local Anesthetic Systemic Toxicity</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="alert-box alert-red">Signs: CNS excitation → seizures → cardiovascular collapse. Bupivacaine is most cardiotoxic.</div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">1</div><div class="step-text"><strong>Stop injection immediately.</strong> Call for help. Get Lipid Rescue Kit.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">2</div><div class="step-text"><strong>Airway:</strong> 100% O₂, secure airway, prevent hypoxia and acidosis (worsen cardiotoxicity).</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">3</div><div class="step-text"><strong>Seizures:</strong> Benzodiazepines first. <span class="dose">Midazolam 1–2 mg IV</span> or <span class="dose">lorazepam 1–2 mg IV</span>. Avoid propofol if hemodynamically unstable.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">4</div><div class="step-text"><strong>Intralipid 20% protocol:</strong><br>Bolus: <span class="dose">1.5 mL/kg IV</span> over 1 min<br>Infusion: <span class="dose">0.25 mL/kg/min</span><br>Repeat bolus ×2 if no response q5 min<br>Max total: <span class="dose">10 mL/kg</span></div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">5</div><div class="step-text"><strong>Cardiac arrest:</strong> CPR + low-dose epi <span class="dose">&lt;1 mcg/kg</span>. Avoid vasopressin, CCBs, β-blockers, and high-dose epi.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">6</div><div class="step-text"><strong>Refractory arrest:</strong> Cardiopulmonary bypass. Alert cardiac surgery early.</div></div>
+          <div class="alert-box alert-green" style="margin-top:8px">✓ ACMT/ASRA Lipid Rescue: www.lipidrescue.org — report all cases</div>
+        </div>
+      </div>
+
+      <!-- CICO -->
+      <div class="card" id="crisis-cico">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--purple-dim);font-size:22px">🫁</div>
+          <div><div class="card-title">CICO</div><div class="card-sub">Can't Intubate, Can't Oxygenate</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="alert-box alert-red">⚠️ Patients die from HYPOXIA — not inability to intubate. If SpO₂ dropping: ACT NOW.</div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--purple-dim);color:#c4b5fd">1</div><div class="step-text"><strong>CALL FOR HELP</strong> immediately if not already done. State "CICO emergency."</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--purple-dim);color:#c4b5fd">2</div><div class="step-text"><strong>Max oxygenation attempts:</strong><div class="pill-row"><span class="pill pill-blue">OPA/NPA + 2-person mask</span><span class="pill pill-blue">Reposition (sniff/ramp)</span><span class="pill pill-blue">Attempt different SGA</span><span class="pill pill-blue">High-flow nasal O₂</span></div></div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--purple-dim);color:#c4b5fd">3</div><div class="step-text"><strong>Limit attempts:</strong> Max 3 per technique. If 2 DL attempts fail → video laryngoscopy or fiberoptic. Different blade, different person each time.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--purple-dim);color:#c4b5fd">4</div><div class="step-text"><strong>If SpO₂ failing → Emergency surgical airway NOW.</strong> Do not delay for one more intubation attempt.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--purple-dim);color:#c4b5fd">5</div><div class="step-text"><strong>Scalpel-Bougie Cricothyrotomy:</strong><br>① Vertical midline skin incision<br>② Palpate CTM → horizontal stab incision<br>③ Rotate scalpel 180° → extend incision<br>④ Finger in trachea → pass bougie caudally<br>⑤ Railroad <span class="dose">6.0 cuffed ETT</span> over bougie<br>⑥ Confirm: EtCO₂ + chest rise</div></div>
+          <div class="alert-box alert-amber" style="margin-top:8px">💡 If you're even thinking about a cric kit — call for it NOW. Better to have it and not need it.</div>
+        </div>
+      </div>
+
+      <!-- MH -->
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--red-dim);font-size:22px">💊</div>
+          <div><div class="card-title">Transfusion Reaction</div><div class="card-sub">Stop blood — identify reaction type</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="alert-box alert-red">STOP THE TRANSFUSION IMMEDIATELY. Notify attending, surgeon, and blood bank.</div>
+          <div style="font-size:13px;margin-bottom:10px;font-weight:600;color:var(--text2)">Reaction types:</div>
+          <div style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Acute hemolytic (ABO incompatibility)</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Tachycardia, ↓BP, brown urine, diffuse oozing under GA. Rx: stop blood, alkalinize urine (bicarb + mannitol + furosemide), supportive care for DIC.</div></div>
+          <div style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">Anaphylactic (IgA deficiency)</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Immediate shock + bronchospasm. Rx: epinephrine, fluids, antihistamines. Future: washed blood products.</div></div>
+          <div style="margin-bottom:12px"><div style="font-size:13px;font-weight:600;margin-bottom:4px">TRALI</div><div style="font-size:12px;color:var(--text2);line-height:1.6">4–6h post-transfusion. Bilateral pulmonary edema, ↓SpO₂, ↓BP, PCWP normal. Rx: supportive (O₂, vent) — NO diuretics (not volume overload).</div></div>
+          <div><div style="font-size:13px;font-weight:600;margin-bottom:4px">Febrile non-hemolytic</div><div style="font-size:12px;color:var(--text2);line-height:1.6">Benign. Tylenol, slow rate. Future: leukoreduced blood.</div></div>
+        </div>
+      </div>
+
+      <!-- Laryngospasm -->
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--accent-dim);font-size:22px">😤</div>
+          <div><div class="card-title">Laryngospasm</div><div class="card-sub">Reflex vocal cord closure</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">1</div><div class="step-text"><strong>Remove stimulus.</strong> Call for help.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">2</div><div class="step-text"><strong>Positive pressure O₂</strong> via tight-fitting mask. Jaw thrust + CPAP <span class="dose">20–30 cmH₂O</span>.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">3</div><div class="step-text"><strong>Larson's maneuver:</strong> firm pressure in the "laryngospasm notch" (posterior to ear lobe, anterior to mastoid).</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">4</div><div class="step-text">If not breaking: <strong>Propofol</strong> <span class="dose">0.5–1 mg/kg IV</span> to deepen anesthesia.</div></div>
+          <div class="crisis-step"><div class="step-num" style="background:var(--accent-dim);color:#93c5fd">5</div><div class="step-text">If SpO₂ dropping and not breaking: <strong>Succinylcholine</strong> <span class="dose">0.1–0.5 mg/kg IV</span> or <span class="dose">4 mg/kg IM</span> (with atropine in peds).</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CALCULATORS -->
+    <div class="screen" id="screen-calc">
+      <div class="section-label">Clinical Calculators</div>
+
+      <!-- ABL -->
+      <div class="card" id="calc-abl">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--red-dim)">🩸</div>
+          <div><div class="card-title">Allowable Blood Loss</div><div class="card-sub">EBV × Hct approach</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div class="calc-field"><div class="calc-label">Weight (kg)</div><input class="calc-input" type="number" id="abl-wt" placeholder="70"></div>
+          <div class="calc-field"><div class="calc-label">Sex <span>affects EBV</span></div><select class="calc-input" id="abl-sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+          <div class="calc-field"><div class="calc-label">Starting Hct (%) <span>preop</span></div><input class="calc-input" type="number" id="abl-hct-start" placeholder="40"></div>
+          <div class="calc-field"><div class="calc-label">Minimum Hct (%) <span>transfusion trigger</span></div><input class="calc-input" type="number" id="abl-hct-min" placeholder="24"></div>
+          <button class="calc-btn" onclick="calcABL()">Calculate</button>
+          <div class="result-box" id="abl-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- FLUIDS -->
+      <div class="card" id="calc-fluids">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--accent-dim)">💧</div>
+          <div><div class="card-title">Fluid Calculator</div><div class="card-sub">Maintenance + NPO deficit</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div class="calc-field"><div class="calc-label">Weight (kg)</div><input class="calc-input" type="number" id="fl-wt" placeholder="70"></div>
+          <div class="calc-field"><div class="calc-label">NPO hours</div><input class="calc-input" type="number" id="fl-npo" placeholder="8"></div>
+          <div class="calc-field"><div class="calc-label">Surgery type <span>3rd space losses</span></div>
+            <select class="calc-input" id="fl-surg">
+              <option value="0">Minimal (hernia, laparoscopy) — 0–2 mL/kg/hr</option>
+              <option value="3">Moderate (cholecystectomy) — 2–4 mL/kg/hr</option>
+              <option value="6">Major (bowel resection) — 4–8 mL/kg/hr</option>
+            </select>
+          </div>
+          <button class="calc-btn" onclick="calcFluids()">Calculate</button>
+          <div class="result-box" id="fl-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- PONV -->
+      <div class="card" id="calc-ponv">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--green-dim)">🤢</div>
+          <div><div class="card-title">PONV Risk (Apfel)</div><div class="card-sub">Prophylaxis recommendation</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">Select all risk factors that apply:</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer"><input type="checkbox" id="ponv-f" style="width:18px;height:18px;accent-color:var(--accent)"><span style="font-size:14px">Female sex</span></label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer"><input type="checkbox" id="ponv-ns" style="width:18px;height:18px;accent-color:var(--accent)"><span style="font-size:14px">Non-smoker</span></label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer"><input type="checkbox" id="ponv-hx" style="width:18px;height:18px;accent-color:var(--accent)"><span style="font-size:14px">History of PONV or motion sickness</span></label>
+            <label style="display:flex;align-items:center;gap:12px;cursor:pointer"><input type="checkbox" id="ponv-op" style="width:18px;height:18px;accent-color:var(--accent)"><span style="font-size:14px">Postop opioids planned</span></label>
+          </div>
+          <button class="calc-btn" onclick="calcPONV()">Calculate Risk</button>
+          <div class="result-box" id="ponv-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- WEIGHT -->
+      <div class="card" id="calc-weight">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--purple-dim)">⚖️</div>
+          <div><div class="card-title">Body Weight</div><div class="card-sub">IBW / ABW / LBW for dosing</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div class="calc-field"><div class="calc-label">Actual weight (kg)</div><input class="calc-input" type="number" id="wt-actual" placeholder="100"></div>
+          <div class="calc-field"><div class="calc-label">Height (cm)</div><input class="calc-input" type="number" id="wt-height" placeholder="170"></div>
+          <div class="calc-field"><div class="calc-label">Sex</div><select class="calc-input" id="wt-sex"><option value="male">Male</option><option value="female">Female</option></select></div>
+          <button class="calc-btn" onclick="calcWeight()">Calculate</button>
+          <div class="result-box" id="wt-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- PARKLAND -->
+      <div class="card" id="calc-parkland">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--amber-dim)">🔥</div>
+          <div><div class="card-title">Parkland Burns Formula</div><div class="card-sub">First 24h fluid resuscitation</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div class="calc-field"><div class="calc-label">Weight (kg)</div><input class="calc-input" type="number" id="pk-wt" placeholder="70"></div>
+          <div class="calc-field"><div class="calc-label">% Total BSA burned <span>2nd + 3rd degree only</span></div><input class="calc-input" type="number" id="pk-bsa" placeholder="30" min="0" max="100"></div>
+          <button class="calc-btn" onclick="calcParkland()">Calculate</button>
+          <div class="result-box" id="pk-result" style="display:none"></div>
+        </div>
+      </div>
+
+      <!-- REVERSAL -->
+      <div class="card" id="calc-reversal">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--green-dim)">↩️</div>
+          <div><div class="card-title">NMBA Reversal Dosing</div><div class="card-sub">Neostigmine vs Sugammadex</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="calc-body" style="display:none">
+          <div class="calc-field"><div class="calc-label">Weight (kg)</div><input class="calc-input" type="number" id="rev-wt" placeholder="70"></div>
+          <div class="calc-field"><div class="calc-label">TOF count / depth</div>
+            <select class="calc-input" id="rev-tof">
+              <option value="cicv">CICO — rocuronium given, need immediate reversal</option>
+              <option value="deep">Deep block — 0 twitches, PTC ≥ 2</option>
+              <option value="moderate">1–2 twitches on TOF</option>
+              <option value="shallow">3–4 twitches on TOF</option>
+            </select>
+          </div>
+          <button class="calc-btn" onclick="calcReversal()">Calculate Doses</button>
+          <div class="result-box" id="rev-result" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEDS -->
+    <div class="screen" id="screen-meds">
+      <div class="search-wrap"><input class="search-input" id="med-search" type="text" placeholder="Search drugs, mechanisms, pearls..." oninput="filterMeds()"></div>
+      <div class="filter-scroll" id="med-filters"></div>
+      <div id="med-list"></div>
+    </div>
+
+    <!-- REFERENCE -->
+    <div class="screen" id="screen-ref">
+      <div class="section-label">Quick Reference</div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--green-dim)">✅</div>
+          <div><div class="card-title">Pre-intubation Checklist</div><div class="card-sub">Never skip this</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div id="checklist-pre"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--accent-dim)">🔤</div>
+          <div><div class="card-title">Post-Intubation "A" List</div><div class="card-sub">9 items after securing airway</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div id="checklist-post"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--purple-dim)">🔬</div>
+          <div><div class="card-title">Extubation Criteria</div><div class="card-sub">Safe to extubate checklist</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div id="checklist-extub"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--amber-dim)">📊</div>
+          <div><div class="card-title">Normal Vital Signs by Age</div><div class="card-sub">Pediatric reference</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div class="table-wrap" style="overflow-x:auto">
+          <table class="ref-table">
+            <tr><th>Age</th><th>HR</th><th>SBP</th><th>RR</th><th>ETT (uncuffed)</th></tr>
+            <tr><td>Neonate</td><td>120–160</td><td>60–80</td><td>40–60</td><td>3.0–3.5</td></tr>
+            <tr><td>1–6 mo</td><td>110–150</td><td>70–90</td><td>30–50</td><td>3.5</td></tr>
+            <tr><td>6–12 mo</td><td>100–130</td><td>80–100</td><td>25–40</td><td>3.5–4.0</td></tr>
+            <tr><td>1–3 yr</td><td>90–120</td><td>90–105</td><td>20–30</td><td>4.0–4.5</td></tr>
+            <tr><td>3–6 yr</td><td>80–110</td><td>95–110</td><td>18–25</td><td>4.5–5.0</td></tr>
+            <tr><td>6–12 yr</td><td>70–100</td><td>100–120</td><td>15–20</td><td>5.5–6.5</td></tr>
+            <tr><td>Adult</td><td>60–100</td><td>100–140</td><td>12–20</td><td>7.0–8.0 cuffed</td></tr>
+          </table>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:8px">ETT depth (cm) ≈ 3 × ETT size. Peds formula: ETT size = (age/4) + 4 uncuffed, (age/4) + 3.5 cuffed</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--red-dim)">🩺</div>
+          <div><div class="card-title">ASA Monitoring Standards</div><div class="card-sub">Required for every anesthetic</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div class="detail-cell"><div class="detail-cell-label">Oxygenation</div><div style="font-size:12px;color:var(--text);line-height:1.5">SpO₂ + FiO₂ analyzer with low O₂ alarm</div></div>
+            <div class="detail-cell"><div class="detail-cell-label">Ventilation</div><div style="font-size:12px;color:var(--text);line-height:1.5">Capnography + disconnect alarm if mechanically ventilated</div></div>
+            <div class="detail-cell"><div class="detail-cell-label">Circulation</div><div style="font-size:12px;color:var(--text);line-height:1.5">EKG + NIBP q5min + one continuous (SpO₂ waveform, a-line, or pulse)</div></div>
+            <div class="detail-cell"><div class="detail-cell-label">Temperature</div><div style="font-size:12px;color:var(--text);line-height:1.5">If clinically significant ΔT anticipated</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--text3);margin-top:10px;line-height:1.6">Continual = repeated regularly (q5 min BP). Continuous = uninterrupted (EKG display, qualified personnel presence).</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header" onclick="toggleCard(this)">
+          <div class="card-icon" style="background:var(--surface3)">💉</div>
+          <div><div class="card-title">Warfarin Reversal Guide</div><div class="card-sub">INR-based dosing</div></div>
+          <div class="chevron">›</div>
+        </div>
+        <div class="card-body">
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">URGENT SURGERY</div>
+          <table class="ref-table" style="margin-bottom:14px">
+            <tr><th>INR</th><th>Treatment</th></tr>
+            <tr><td>1.5–1.9</td><td>FFP</td></tr>
+            <tr><td>1.9–5.0</td><td>FFP + Vit K 1–3 mg IV</td></tr>
+            <tr><td>5.0–9.0</td><td>FFP + Vit K 2–5 mg IV</td></tr>
+          </table>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">SURGERY IN 24–48h</div>
+          <table class="ref-table">
+            <tr><th>INR</th><th>Treatment</th></tr>
+            <tr><td>1.5–1.9</td><td>Vit K 1 mg PO</td></tr>
+            <tr><td>1.9–5.0</td><td>Vit K 1–2.5 mg PO</td></tr>
+            <tr><td>5.0–9.0</td><td>Vit K 2.5–5 mg PO</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end content -->
+
+  <!-- TAB BAR -->
+  <div class="tab-bar">
+    <button class="tab active" id="tab-home" onclick="switchTab('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </button>
+    <button class="tab" id="tab-crisis" onclick="switchTab('crisis')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Crisis</span>
+    </button>
+    <button class="tab" id="tab-calc" onclick="switchTab('calc')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="12" y2="14"/></svg>
+      <span>Calc</span>
+    </button>
+    <button class="tab" id="tab-meds" onclick="switchTab('meds')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+      <span>Meds</span>
+    </button>
+    <button class="tab" id="tab-ref" onclick="switchTab('ref')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      <span>Reference</span>
+    </button>
+  </div>
+</div>
+
+<script>
+// ── NAV ──
+const tabs=['home','crisis','calc','meds','ref'];
+const headers={home:['AnesRef','Stanford CA-1 Reference'],crisis:['Crisis Protocols','Emergency algorithms'],calc:['Calculators','Clinical dosing tools'],meds:['Medications','46 drugs'],ref:['Reference','Checklists & tables']};
+function switchTab(name){
+  tabs.forEach(t=>{
+    document.getElementById('screen-'+t).classList.toggle('active',t===name);
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+  });
+  document.getElementById('header-title').textContent=headers[name][0];
+  document.getElementById('header-sub').textContent=headers[name][1];
+  document.querySelector('.content').scrollTop=0;
+}
+function openCrisis(id){switchTab('crisis');setTimeout(()=>{const el=document.getElementById('crisis-'+id);if(el&&!el.classList.contains('open')){el.classList.add('open');el.querySelector('.card-body').style.display='block';el.scrollIntoView({behavior:'smooth',block:'start'});}},50);}
+function openCalc(id){switchTab('calc');setTimeout(()=>{const el=document.getElementById('calc-'+id);if(el&&!el.classList.contains('open')){el.classList.add('open');const body=el.querySelector('.calc-body');if(body)body.style.display='block';el.scrollIntoView({behavior:'smooth',block:'start'});}},50);}
+
+// ── CARDS ──
+function toggleCard(header){
+  const card=header.parentElement;
+  const isOpen=card.classList.contains('open');
+  card.classList.toggle('open',!isOpen);
+  const body=card.querySelector('.card-body')||card.querySelector('.calc-body');
+  if(body)body.style.display=isOpen?'none':'block';
+}
+
+// ── CALCULATORS ──
+function calcABL(){
+  const wt=+document.getElementById('abl-wt').value||70;
+  const sex=document.getElementById('abl-sex').value;
+  const hctS=+document.getElementById('abl-hct-start').value||40;
+  const hctM=+document.getElementById('abl-hct-min').value||24;
+  const ebv=wt*(sex==='male'?70:65);
+  const abl=ebv*((hctS-hctM)/hctS);
+  const prbcs=Math.ceil(abl/250);
+  const res=document.getElementById('abl-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div class="result-row"><span class="result-label">Est. Blood Volume (EBV)</span><span class="result-val">${Math.round(ebv)} mL</span></div>
+    <div class="result-row"><span class="result-label">Allowable Blood Loss</span><span class="result-val ${abl<500?'warn':'danger'}">${Math.round(abl)} mL</span></div>
+    <div class="result-row"><span class="result-label">Units pRBC to trigger transfusion</span><span class="result-val">${prbcs} units</span></div>
+    <div class="result-row"><span class="result-label">1 unit pRBC raises Hgb by</span><span class="result-val">~1 g/dL</span></div>`;
+}
+function calcFluids(){
+  const wt=+document.getElementById('fl-wt').value||70;
+  const npo=+document.getElementById('fl-npo').value||8;
+  const surg=+document.getElementById('fl-surg').value||0;
+  let maint=0;
+  if(wt<=10)maint=wt*4;
+  else if(wt<=20)maint=40+(wt-10)*2;
+  else maint=60+(wt-20)*1;
+  const deficit=maint*npo;
+  const third=surg*wt;
+  const h1=deficit/2+maint+third;
+  const h2=deficit/4+maint+third;
+  const res=document.getElementById('fl-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div class="result-row"><span class="result-label">Maintenance rate</span><span class="result-val">${Math.round(maint)} mL/hr</span></div>
+    <div class="result-row"><span class="result-label">NPO deficit (${npo}h)</span><span class="result-val">${Math.round(deficit)} mL</span></div>
+    <div class="result-row"><span class="result-label">3rd space losses</span><span class="result-val">${Math.round(third)} mL/hr</span></div>
+    <div style="border-top:1px solid var(--border);margin:10px 0;padding-top:10px;font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:0.5px">Replacement schedule</div>
+    <div class="result-row"><span class="result-label">Hour 1</span><span class="result-val">${Math.round(h1)} mL</span></div>
+    <div class="result-row"><span class="result-label">Hour 2</span><span class="result-val">${Math.round(h2)} mL</span></div>
+    <div class="result-row"><span class="result-label">Hour 3+</span><span class="result-val">${Math.round(h2)} mL/hr</span></div>`;
+}
+function calcPONV(){
+  const score=[
+    document.getElementById('ponv-f').checked,
+    document.getElementById('ponv-ns').checked,
+    document.getElementById('ponv-hx').checked,
+    document.getElementById('ponv-op').checked
+  ].filter(Boolean).length;
+  const risks=[10,20,40,60,80];
+  const risk=risks[score];
+  const recs=['No prophylaxis needed','Consider 1 antiemetic (high-risk surgery or patient preference)','2 antiemetics recommended','2–3 antiemetics + consider TIVA','Maximum prophylaxis: 3 antiemetics + TIVA + minimize opioids'];
+  const colors=['result-val','result-val','result-val warn','result-val warn','result-val danger'];
+  const res=document.getElementById('ponv-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div class="result-row"><span class="result-label">Apfel Score</span><span class="${colors[score]}">${score} / 4</span></div>
+    <div class="result-row"><span class="result-label">Estimated PONV Risk</span><span class="${colors[score]}">${risk}%</span></div>
+    <div style="margin-top:10px;padding:10px;background:var(--surface3);border-radius:8px;font-size:12px;line-height:1.6;color:var(--text)">${recs[score]}</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.6"><strong style="color:var(--text)">Agents:</strong> Ondansetron 4 mg IV · Dexamethasone 4–8 mg at induction · Droperidol 0.625–1.25 mg · Scopolamine patch</div>`;
+}
+function calcWeight(){
+  const actual=+document.getElementById('wt-actual').value||100;
+  const ht=+document.getElementById('wt-height').value||170;
+  const sex=document.getElementById('wt-sex').value;
+  const ibw=sex==='male'?50+0.906*(ht-152.4):45.5+0.906*(ht-152.4);
+  const ibwR=Math.max(ibw,0);
+  const abw=ibwR+0.4*(actual-ibwR);
+  const lbw=sex==='male'?(9270*actual)/(6680+216*actual/Math.pow(ht/100,2)):(9270*actual)/(8780+244*actual/Math.pow(ht/100,2));
+  const bmi=actual/Math.pow(ht/100,2);
+  const res=document.getElementById('wt-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div class="result-row"><span class="result-label">Actual Body Weight</span><span class="result-val">${actual} kg</span></div>
+    <div class="result-row"><span class="result-label">BMI</span><span class="result-val ${bmi>30?'warn':''}">${bmi.toFixed(1)} kg/m²</span></div>
+    <div class="result-row"><span class="result-label">Ideal Body Weight (IBW)</span><span class="result-val">${ibwR.toFixed(1)} kg</span></div>
+    <div class="result-row"><span class="result-label">Adjusted Body Weight (ABW)</span><span class="result-val">${abw.toFixed(1)} kg</span></div>
+    <div class="result-row"><span class="result-label">Lean Body Weight (LBW)</span><span class="result-val">${lbw.toFixed(1)} kg</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.7"><strong style="color:var(--text)">Dosing guide:</strong><br>Propofol: LBW · Succinylcholine: TBW · Rocuronium: IBW (RSI: TBW) · Neostigmine: TBW · Sugammadex: TBW · Opioids: IBW (obese)</div>`;
+}
+function calcParkland(){
+  const wt=+document.getElementById('pk-wt').value||70;
+  const bsa=+document.getElementById('pk-bsa').value||30;
+  const total=4*wt*bsa;
+  const first8=total/2;
+  const next16=total/2;
+  const rate8=first8/8;
+  const rate16=next16/16;
+  const res=document.getElementById('pk-result');
+  res.style.display='block';
+  res.innerHTML=`
+    <div class="result-row"><span class="result-label">Total fluid (24h)</span><span class="result-val">${Math.round(total)} mL LR</span></div>
+    <div class="result-row"><span class="result-label">First 8 hours</span><span class="result-val">${Math.round(first8)} mL</span></div>
+    <div class="result-row"><span class="result-label">Rate for first 8h</span><span class="result-val">${Math.round(rate8)} mL/hr</span></div>
+    <div class="result-row"><span class="result-label">Next 16 hours</span><span class="result-val">${Math.round(next16)} mL</span></div>
+    <div class="result-row"><span class="result-label">Rate for next 16h</span><span class="result-val">${Math.round(rate16)} mL/hr</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.6">Start time is from time of BURN, not hospital arrival. Target UOP 0.5–1 mL/kg/hr. Avoid succinylcholine &gt;24h post-burn.</div>`;
+}
+function calcReversal(){
+  const wt=+document.getElementById('rev-wt').value||70;
+  const tof=document.getElementById('rev-tof').value;
+  const res=document.getElementById('rev-result');
+  res.style.display='block';
+  if(tof==='cicv'){
+    const sugDose=16*wt;
+    res.innerHTML=`<div class="alert-box alert-red" style="margin-bottom:12px">CICV emergency — use sugammadex only</div>
+    <div class="result-row"><span class="result-label">Sugammadex dose</span><span class="result-val danger">${Math.round(sugDose)} mg IV</span></div>
+    <div class="result-row"><span class="result-label">Give as</span><span class="result-val">Rapid IV push</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">Time to recovery: &lt;2 min from 1.2 mg/kg rocuronium</div>`;
+  } else if(tof==='deep'){
+    const sugDose=4*wt;
+    res.innerHTML=`<div class="result-row"><span class="result-label">Sugammadex (recommended)</span><span class="result-val">${Math.round(sugDose)} mg IV</span></div>
+    <div class="result-row"><span class="result-label">Neostigmine</span><span class="result-val warn">Not recommended at deep block</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">Neostigmine paradoxically slows recovery if given before spontaneous recovery has started (&lt;2 twitches).</div>`;
+  } else if(tof==='moderate'){
+    const sugDose=2*wt;
+    const neoDose=Math.min(0.05*wt,3.5);
+    const glycoDose=(neoDose/5).toFixed(2);
+    res.innerHTML=`<div class="result-row"><span class="result-label">Sugammadex (preferred)</span><span class="result-val">${Math.round(sugDose)} mg IV</span></div>
+    <div style="border-top:1px solid var(--border);margin:8px 0"></div>
+    <div class="result-row"><span class="result-label">Neostigmine</span><span class="result-val">${neoDose.toFixed(1)} mg IV</span></div>
+    <div class="result-row"><span class="result-label">Glycopyrrolate (with neo)</span><span class="result-val">${glycoDose} mg IV</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">Allow 5 min for full effect. Confirm TOF ≥0.9 before extubation.</div>`;
+  } else {
+    const neoDose=Math.min(0.02*wt,1.5);
+    const glycoDose=(neoDose/5).toFixed(2);
+    const sugDose=2*wt;
+    res.innerHTML=`<div class="result-row"><span class="result-label">Neostigmine (adequate recovery)</span><span class="result-val">${neoDose.toFixed(1)} mg IV</span></div>
+    <div class="result-row"><span class="result-label">Glycopyrrolate</span><span class="result-val">${glycoDose} mg IV</span></div>
+    <div class="result-row"><span class="result-label">Sugammadex (if preferred)</span><span class="result-val">${Math.round(sugDose)} mg IV</span></div>
+    <div style="margin-top:10px;font-size:11px;color:var(--text2)">At 4 equal twitches, 15–20 mcg/kg neostigmine is often sufficient. Confirm TOF ratio ≥0.9 with acceleromyography before extubation.</div>`;
+  }
+}
+
+// ── MEDICATIONS ──
+const catColors={induction:'#378ADD',opioid:'#3ecf8e',nmba:'#f5a623',vasoactive:'#a78bfa',local:'#f25c54',reversal:'#3ecf8e',antihtn:'#8892a4'};
+const meds=[
+  {cat:'induction',drug:'Propofol',brand:'Diprivan',bolus:'1.5–2.5 mg/kg',infusion:'Hypnosis: 100–200 mcg/kg/min\nSedation: 25–75 mcg/kg/min',onset:'15–45 sec',peak:'1–2 min',duration:'5–10 min',moa:'GABA-A potentiator; cerebral vasoconstrictor; antiemetic',pearls:'Pain on injection 32–67%; ↓SVR/↓BP; anticonvulsant; PRIS at >4 mg/kg/hr prolonged'},
+  {cat:'induction',drug:'Etomidate',brand:'Amidate',bolus:'0.2–0.3 mg/kg',infusion:'Not routinely used',onset:'15–45 sec',peak:'1 min',duration:'3–12 min',moa:'GABA-A agonist; inhibits 11-β-hydroxylase',pearls:'Most hemodynamically stable; myoclonus; ↑PONV; adrenal suppression even after single dose'},
+  {cat:'induction',drug:'Ketamine',brand:'Ketalar',bolus:'1–2 mg/kg IV / 4–6 mg/kg IM',infusion:'0.1–0.5 mg/kg/hr analgesic',onset:'45–60 sec IV',peak:'1–2 min',duration:'10–20 min',moa:'NMDA receptor antagonist; also κ-opioid agonist; dissociative',pearls:'↑CMRO₂/CBF/ICP; preserves airway reflexes; bronchodilator; ↑secretions (add glyco)'},
+  {cat:'induction',drug:'Thiopental',brand:'Pentothal',bolus:'3–5 mg/kg IV',infusion:'Rarely',onset:'<30 sec',peak:'1 min',duration:'5–10 min',moa:'Barbiturate; GABA-A potentiator',pearls:'pH 9 — do NOT mix with rocuronium; ↓CMRO₂; anticonvulsant; no longer US-produced'},
+  {cat:'induction',drug:'Midazolam',brand:'Versed',bolus:'Pre-med: 0.02–0.04 mg/kg\nInduction: 0.1–0.2 mg/kg',infusion:'0.02–0.1 mg/kg/hr (ICU)',onset:'30–90 sec',peak:'3–5 min',duration:'10–30 min',moa:'Benzodiazepine; GABA-A — increases frequency of Cl⁻ channel opening',pearls:'No analgesia; flumazenil reversal shorter-acting — watch re-sedation'},
+  {cat:'induction',drug:'Dexmedetomidine',brand:'Precedex',bolus:'Load: 0.5–1 mcg/kg over 10 min',infusion:'0.4–1.2 mcg/kg/hr',onset:'<5 min',peak:'15–30 min',duration:'1–2 hr',moa:'Selective α₂ agonist (1600:1 α₂:α₁); inhibits NE release in locus coeruleus',pearls:'Minimal respiratory depression; opioid-sparing; bradycardia/heart block main SE'},
+  {cat:'opioid',drug:'Fentanyl',brand:'Sublimaze',bolus:'Induction blunting: 1–3 mcg/kg',infusion:'2.5 mcg/kg/hr (caution: long t½)',onset:'3–5 min',peak:'5–10 min',duration:'30–60 min',moa:'Mu-opioid agonist',pearls:'Long context-sensitive t½ limits infusions; blunts laryngoscopy response; eq = 50 mcg'},
+  {cat:'opioid',drug:'Remifentanil',brand:'Ultiva',bolus:'0.5–1 mcg/kg (caution: apnea)',infusion:'0.05–0.3 mcg/kg/MIN (not /hr)',onset:'3–5 min',peak:'3–5 min',duration:'5–10 min',moa:'Mu-opioid agonist; plasma esterase metabolism — context-independent',pearls:'Dose in /MIN; acute tolerance + hyperalgesia risk; bradycardia common'},
+  {cat:'opioid',drug:'Sufentanil',brand:'Sufenta',bolus:'0.2–0.3 mcg/kg',infusion:'0.3→0.2→0.1 mcg/kg/HR',onset:'3–5 min',peak:'5–8 min',duration:'20–45 min',moa:'Mu-opioid agonist (5–10× more potent than fentanyl)',pearls:'Dose in /HR (not /min); analgesic tail useful; eq = 5 mcg'},
+  {cat:'opioid',drug:'Alfentanil',brand:'Alfenta',bolus:'Brief stim: 5–40 mcg/kg',infusion:'0.5–3 mcg/kg/min',onset:'1–2 min',peak:'1.5–2 min',duration:'5–10 min',moa:'Mu-opioid; low pKa (6.5) → rapid CNS penetration',pearls:'Fastest onset ~90 sec; use for retrobulbar block/Mayfield pins'},
+  {cat:'opioid',drug:'Hydromorphone',brand:'Dilaudid',bolus:'0.2–0.6 mg IV',infusion:'ICU: 0.2–0.5 mg/hr',onset:'5–15 min',peak:'15–20 min',duration:'2–4 hr',moa:'Mu-opioid agonist; no histamine release',pearls:'Allow 15 min to peak; good PACU/PCA transition; eq = 0.75 mg'},
+  {cat:'opioid',drug:'Morphine',brand:'MS Contin (PO)',bolus:'2–5 mg IV titrate',infusion:'1–5 mg/hr (ICU)',onset:'10–20 min',peak:'20–30 min',duration:'4–5 hr',moa:'Mu-opioid agonist; active metabolite M6G (renally excreted)',pearls:'Histamine release; M6G accumulates in renal failure; eq = 5 mg'},
+  {cat:'opioid',drug:'Meperidine',brand:'Demerol',bolus:'Shivering: 12.5–25 mg IV',infusion:'Not recommended',onset:'5–15 min',peak:'5–10 min',duration:'2–4 hr',moa:'Mu-opioid agonist; anticholinergic properties',pearls:'Reserved for postop shivering; normeperidine (toxic metabolite) lowers seizure threshold; avoid with MAOIs'},
+  {cat:'opioid',drug:'Methadone',brand:'Dolophine',bolus:'0.1–0.3 mg/kg IV at induction',infusion:'Not used intraop',onset:'10 min',peak:'15–30 min',duration:'24–36 hr',moa:'L-isomer: mu-opioid; D-isomer: NMDA antagonist',pearls:'Longest t½ (~24h); QT prolongation; requires ≥1 night inpatient monitoring'},
+  {cat:'nmba',drug:'Succinylcholine',brand:'Anectine',bolus:'1–1.5 mg/kg IV / 4 mg/kg IM',infusion:'Rarely',onset:'30–60 sec',peak:'1–1.5 min',duration:'6–10 min',moa:'Depolarizing nAChR agonist; Phase I block → prolonged depolarization',pearls:'Contraindicated: burns >24h, denervation, hyperkalemia, open globe, MH Hx; raises K⁺ 0.5 mEq/L'},
+  {cat:'nmba',drug:'Rocuronium',brand:'Zemuron',bolus:'Intubation: 0.6 mg/kg\nRSI: 1.2 mg/kg',infusion:'0.1–0.2 mg/kg/hr',onset:'1.5–2 min',peak:'3–5 min',duration:'30–40 min',moa:'Non-depolarizing; competitive nAChR antagonist',pearls:'Reversed by sugammadex; CICV: 1.2 mg/kg → sugammadex 16 mg/kg; >70% hepatic'},
+  {cat:'nmba',drug:'Vecuronium',brand:'Norcuron',bolus:'0.1–0.2 mg/kg',infusion:'0.01–0.02 mg/kg/hr',onset:'3–4 min',peak:'5–7 min',duration:'35–45 min',moa:'Non-depolarizing; competitive nAChR antagonist',pearls:'3-OH metabolite accumulates in renal failure → prolonged blockade; 50% hepatic'},
+  {cat:'nmba',drug:'Cisatracurium',brand:'Nimbex',bolus:'0.15–0.2 mg/kg',infusion:'3 mcg/kg/min',onset:'5–7 min',peak:'7–10 min',duration:'35–45 min',moa:'Non-depolarizing; Hofmann elimination (pH + temperature dependent)',pearls:'Organ-independent metabolism; ideal in liver/renal failure; no histamine release'},
+  {cat:'reversal',drug:'Neostigmine',brand:'Bloxiverz',bolus:'40–70 mcg/kg IV (max 70 mcg/kg)',infusion:'N/A',onset:'7–11 min',peak:'10–15 min',duration:'40–60 min',moa:'Acetylcholinesterase inhibitor → ↑ACh at NMJ; does NOT cross BBB',pearls:'Always give with glycopyrrolate (1:5 ratio); need ≥2 twitches; ceiling at 70 mcg/kg'},
+  {cat:'reversal',drug:'Sugammadex',brand:'Bridion',bolus:'Routine: 2 mg/kg\nDeep: 4 mg/kg\nCICV: 16 mg/kg',infusion:'N/A',onset:'<3 min',peak:'2–5 min',duration:'N/A',moa:'γ-cyclodextrin; directly encapsulates rocuronium/vecuronium',pearls:'Hormonal contraceptives: backup method ×7d; avoid severe renal failure; precipitates with ondansetron'},
+  {cat:'reversal',drug:'Glycopyrrolate',brand:'Robinul',bolus:'0.2 mg per 1 mg neostigmine',infusion:'N/A',onset:'2–3 min',peak:'5–10 min',duration:'2–4 hr',moa:'Anticholinergic — prevents neostigmine-induced muscarinic effects',pearls:'Does not cross BBB or placenta; less tachycardia than atropine; pair with neostigmine'},
+  {cat:'reversal',drug:'Flumazenil',brand:'Romazicon',bolus:'0.2 mg IV q1 min (max 1 mg)',infusion:'N/A',onset:'1–2 min',peak:'3–5 min',duration:'45–90 min',moa:'Competitive benzodiazepine receptor antagonist',pearls:'Shorter-acting than most benzos → re-sedation; may precipitate seizures in benzo-dependent patients'},
+  {cat:'reversal',drug:'Naloxone',brand:'Narcan',bolus:'0.04–0.4 mg IV (titrate 0.04 mg q2–3 min)',infusion:'0.5–1 mcg/kg/hr',onset:'1–2 min',peak:'5–10 min',duration:'30–90 min',moa:'Competitive opioid receptor antagonist (µ, κ, δ)',pearls:'Titrate carefully — flash pulmonary edema/↑BP risk; shorter-acting than most opioids'},
+  {cat:'vasoactive',drug:'Phenylephrine',brand:'Vazculep',bolus:'50–100 mcg IV',infusion:'0.2–2 mcg/kg/min',onset:'<1 min',peak:'1 min',duration:'10–15 min',moa:'Pure α₁ agonist → vasoconstriction; no β activity',pearls:'↑SVR without ↑HR; reflex bradycardia; reduces CO (caution CHF); preferred for neuraxial hypotension'},
+  {cat:'vasoactive',drug:'Ephedrine',brand:'Generic',bolus:'5–10 mg IV',infusion:'N/A',onset:'1–2 min',peak:'2–5 min',duration:'60 min',moa:'Indirect α + β agonist (releases endogenous NE)',pearls:'↑HR + ↑CO; tachyphylaxis; crosses placenta; preferred if baseline bradycardia with hypotension'},
+  {cat:'vasoactive',drug:'Epinephrine',brand:'Adrenalin',bolus:'Anaphylaxis: 10–100 mcg IV\nArrest: 1 mg IV',infusion:'0.02–0.3 mcg/kg/min',onset:'<1 min',peak:'1–3 min',duration:'<5 min',moa:'α₁, α₂, β₁, β₂ agonist; dose-dependent receptor preference',pearls:'First-line anaphylaxis; ↑myocardial O₂ demand; bronchodilation (β₂)'},
+  {cat:'vasoactive',drug:'Vasopressin',brand:'Vasostrict',bolus:'0.5–1 unit IV',infusion:'0.01–0.04 units/min',onset:'<1 min',peak:'15–30 min',duration:'30–60 min',moa:'V1 receptor → vascular smooth muscle contraction; no adrenergic activity',pearls:'Useful in catecholamine-resistant shock; reduces NE requirements in sepsis'},
+  {cat:'vasoactive',drug:'Norepinephrine',brand:'Levophed',bolus:'5–10 mcg IV',infusion:'0.02–0.3 mcg/kg/min',onset:'<1 min',peak:'1–2 min',duration:'1–2 min',moa:'α₁ >> β₁ agonist; potent vasoconstriction + mild inotropy',pearls:'First-line in septic shock; tissue necrosis with extravasation; reflex bradycardia'},
+  {cat:'antihtn',drug:'Labetalol',brand:'Trandate',bolus:'5–10 mg IV',infusion:'0.5–2 mg/min',onset:'2–5 min',peak:'10–15 min',duration:'45 min – 6 hr',moa:'α₁ + non-selective β blocker (β:α = 7:1 IV)',pearls:'↓HR + ↓BP; avoid in bronchospasm/decompensated HF; safe in pregnancy'},
+  {cat:'antihtn',drug:'Esmolol',brand:'Brevibloc',bolus:'10–20 mg IV',infusion:'50–300 mcg/kg/min',onset:'1 min',peak:'2–5 min',duration:'10–20 min',moa:'Ultra-short β₁ selective blocker; RBC esterase metabolism',pearls:'HR >> BP effect; blunts intubation response; alternative to fentanyl at induction'},
+  {cat:'antihtn',drug:'Clevidipine',brand:'Cleviprex',bolus:'—',infusion:'Start 1–2 mg/hr; titrate; max 32 mg/hr',onset:'1–2 min',peak:'2–4 min',duration:'5–15 min',moa:'Dihydropyridine CCB (arterial selective); ↓SVR',pearls:'In lipid emulsion; precise titration; does not affect preload'},
+  {cat:'antihtn',drug:'Nitroglycerin',brand:'Nitrostat',bolus:'10–50 mcg IV',infusion:'0.1–1 mcg/kg/min',onset:'1 min',peak:'1–3 min',duration:'3–5 min',moa:'NO donor → venous >> arterial smooth muscle relaxation',pearls:'Reduces preload; avoid with PDE5 inhibitors; avoid in ICH (cerebral vasodilator)'},
+  {cat:'antihtn',drug:'Nitroprusside',brand:'Nipride',bolus:'10–50 mcg IV',infusion:'0.1–1 mcg/kg/min (max 10 mcg/kg/min ×10 min)',onset:'<1 min',peak:'1–2 min',duration:'1–10 min',moa:'NO donor → arterial >> venous dilation',pearls:'Cyanide toxicity risk (prolonged/high dose/renal failure); avoid in ICH'},
+  {cat:'antihtn',drug:'Hydralazine',brand:'Apresoline',bolus:'5 mg IV q20 min',infusion:'Rarely',onset:'5–20 min',peak:'15–30 min',duration:'2–6 hr',moa:'Direct arteriolar vasodilator',pearls:'Unpredictable PK/PD; reflex tachycardia; useful in OB HTN; drug-induced lupus (chronic)'},
+  {cat:'local',drug:'Lidocaine',brand:'Xylocaine',bolus:'Max 4.5 mg/kg plain / 7 mg/kg with epi',infusion:'IV analgesic: 1–2 mg/kg/hr',onset:'2–5 min infiltration',peak:'5–10 min',duration:'30–120 min',moa:'Amide LA; Na⁺ channel blockade (inactivated state)',pearls:'Most versatile LA; IV antiarrhythmic; topical for airway; LAST → Intralipid 20%'},
+  {cat:'local',drug:'Bupivacaine',brand:'Marcaine',bolus:'Max 2.5 mg/kg plain / 3 mg/kg with epi',infusion:'Epidural: 0.0625–0.125% at 6–14 mL/hr',onset:'2–5 min',peak:'10–20 min',duration:'4–12 hr (neuraxial)',moa:'Amide LA; high lipid solubility → prolonged duration',pearls:'Most cardiotoxic LA; 0.75% contraindicated epidural OB; LAST → Intralipid'},
+  {cat:'local',drug:'Ropivacaine',brand:'Naropin',bolus:'Max 3 mg/kg',infusion:'Epidural: 0.2% at 6–14 mL/hr',onset:'3–8 min',peak:'15–30 min',duration:'2–6 hr',moa:'Amide LA (S-enantiomer); Na⁺ channel blockade',pearls:'Slightly less potent than bupivacaine; safer cardiac profile; more motor-sparing'},
+];
+
+let medFilter='all';let medSearch='';
+const catList=[{v:'all',l:'All'},{v:'induction',l:'Induction'},{v:'opioid',l:'Opioids'},{v:'nmba',l:'NMBAs'},{v:'vasoactive',l:'Vasopressors'},{v:'antihtn',l:'Antihypertensives'},{v:'reversal',l:'Reversal'},{v:'local',l:'Local Anesthetics'}];
+
+function initMeds(){
+  const filt=document.getElementById('med-filters');
+  filt.innerHTML=catList.map(c=>`<div class="ftag${c.v==='all'?' active':''}" onclick="setMedFilter('${c.v}')" id="mf-${c.v}">${c.l}</div>`).join('');
+  renderMeds();
+}
+function setMedFilter(v){
+  medFilter=v;
+  catList.forEach(c=>document.getElementById('mf-'+c.v).classList.toggle('active',c.v===v));
+  renderMeds();
+}
+function filterMeds(){medSearch=document.getElementById('med-search').value;renderMeds();}
+function renderMeds(){
+  const q=medSearch.toLowerCase();
+  const list=document.getElementById('med-list');
+  const filtered=meds.filter(m=>{
+    const catOk=medFilter==='all'||m.cat===medFilter;
+    const qOk=!q||[m.drug,m.brand,m.moa,m.pearls,m.bolus].some(f=>f&&f.toLowerCase().includes(q));
+    return catOk&&qOk;
+  });
+  list.innerHTML='<div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;margin:0 12px 16px;overflow:hidden">'+
+    filtered.map((m,i)=>`
+    <div>
+      <div class="drug-row" onclick="toggleDrug(${i})" id="drow-${i}">
+        <div class="drug-name-row">
+          <div class="cat-dot" style="background:${catColors[m.cat]||'#888'}"></div>
+          <div class="drug-name-text">${m.drug}</div>
+          <div class="drug-brand">${m.brand}</div>
+        </div>
+        <div class="drug-moa">${m.moa}</div>
+      </div>
+      <div class="drug-detail" id="ddetail-${i}">
+        <div class="detail-grid">
+          <div class="detail-cell"><div class="detail-cell-label">Bolus / Induction</div><div class="detail-cell-val">${m.bolus.replace(/\n/g,'<br>')}</div></div>
+          <div class="detail-cell"><div class="detail-cell-label">Infusion</div><div class="detail-cell-val">${m.infusion.replace(/\n/g,'<br>')}</div></div>
+          <div class="detail-cell"><div class="detail-cell-label">Onset / Peak</div><div class="detail-cell-val">${m.onset}<br>Peak: ${m.peak}</div></div>
+          <div class="detail-cell"><div class="detail-cell-label">Duration</div><div class="detail-cell-val">${m.duration}</div></div>
+        </div>
+        <div class="detail-pearls">⚡ ${m.pearls}</div>
+      </div>
+    </div>`).join('')+
+  '</div>';
+}
+function toggleDrug(i){
+  const detail=document.getElementById('ddetail-'+i);
+  detail.classList.toggle('open');
+}
+
+// ── CHECKLISTS ──
+function buildChecklist(id, items){
+  document.getElementById(id).innerHTML=items.map((item,i)=>`
+    <label style="display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer" id="chk-${id}-${i}">
+      <div style="width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;background:var(--surface2);transition:all 0.15s" id="chk-box-${id}-${i}"></div>
+      <span style="font-size:13px;line-height:1.6;color:var(--text)" id="chk-txt-${id}-${i}">${item}</span>
+    </label>`).join('')+
+    `<button class="calc-btn" style="margin-top:12px;background:var(--surface3);color:var(--text2)" onclick="resetChecklist('${id}',${items.length})">Reset</button>`;
+  items.forEach((_,i)=>{
+    document.getElementById(`chk-${id}-${i}`).addEventListener('click',()=>{
+      const box=document.getElementById(`chk-box-${id}-${i}`);
+      const txt=document.getElementById(`chk-txt-${id}-${i}`);
+      const checked=box.dataset.checked==='1';
+      box.dataset.checked=checked?'0':'1';
+      box.style.background=checked?'var(--surface2)':'var(--green)';
+      box.style.borderColor=checked?'var(--border)':'var(--green)';
+      box.innerHTML=checked?'':'<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      txt.style.textDecoration=checked?'none':'line-through';
+      txt.style.color=checked?'var(--text)':'var(--text3)';
+    });
+  });
+}
+function resetChecklist(id,len){
+  for(let i=0;i<len;i++){
+    const box=document.getElementById(`chk-box-${id}-${i}`);
+    const txt=document.getElementById(`chk-txt-${id}-${i}`);
+    if(box){box.dataset.checked='0';box.style.background='var(--surface2)';box.style.borderColor='var(--border)';box.innerHTML='';}
+    if(txt){txt.style.textDecoration='none';txt.style.color='var(--text)';}
+  }
+}
+buildChecklist('checklist-pre',[
+  'Suction on and within reach','Airway cart checked — blades, stylet, backup ETT sizes','Video laryngoscope available and charged','Pre-oxygenate ≥3 min (or 8 vital capacity breaths)','Difficult airway plan B and C identified','Medications drawn and labeled','IV access confirmed functional','Patient positioned — sniffing/ramped, tragus aligned with sternum','Monitors attached: SpO₂, NIBP, EKG','Call anesthesia tech if any concern']);
+buildChecklist('checklist-post',['Airway — ETT position confirmed, vent settings set','Anesthesia — volatile or infusion running and displayed','Access — all IVs, a-line, CVC confirmed patent','Another thing in mouth — OG tube, bite block, TEE probe','Arms — tucked, padded, no pressure points','Air — forced air warming (Bair Hugger) and temp probe placed','ABG/ACT — baseline labs drawn if applicable','Antibiotics — confirmed given within 60 min of incision','Analgesia — redose prior to incision if appropriate']);
+buildChecklist('checklist-extub',['TOF ratio ≥0.9 confirmed (acceleromyography)','Reversal given (neostigmine or sugammadex)','Core temperature >36°C','SpO₂ >95% on current FiO₂','Spontaneous RR >8 breaths/min','Patient following commands (squeeze hand, open eyes)','Adequate cough and gag reflex present','No ongoing surgical bleeding or major instability','Hemodynamics stable — no active pressors required','Airway not at risk — not full stomach, not difficult airway concern']);
+
+initMeds();
+</script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.log('SW error:', e));
+  });
+}
+</script>
+</body>
+</html>
