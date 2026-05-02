@@ -879,14 +879,5 @@ buildChecklist('checklist-extub',['TOF ratio ≥0.9 confirmed (acceleromyography
 
 initMeds();
 </script>
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js')
-      .then(r => console.log('SW registered:', r.scope))
-      .catch(e => console.log('SW error:', e));
-  });
-}
-</script>
 </body>
 </html>
